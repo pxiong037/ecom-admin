@@ -3,7 +3,6 @@ import {PutObjectCommand, S3Client} from '@aws-sdk/client-s3';
 import fs from 'fs';
 import mime from 'mime-types';
 import {mongooseConnect} from "@/lib/mongoose";
-const bucketName = 'tech-comm-nextjs';
 
 export default async function handle(req,res) {
   await mongooseConnect();
@@ -23,18 +22,19 @@ export default async function handle(req,res) {
       secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     },
   });
+
   const links = [];
   for (const file of files.file) {
     const ext = file.originalFilename.split('.').pop();
     const newFilename = Date.now() + '.' + ext;
     await client.send(new PutObjectCommand({
-      Bucket: bucketName,
+      Bucket: process.env.BUCKET_NAME,
       Key: newFilename,
       Body: fs.readFileSync(file.path),
       ACL: 'public-read',
       ContentType: mime.lookup(file.path),
     }));
-    const link = new String(`https://${bucketName}.s3.amazonaws.com/${newFilename}`);
+    const link = new String(`https://${process.env.BUCKET_NAME}.s3.amazonaws.com/${newFilename}`);
     links.push(link);
   }
   return res.json({links});
